@@ -12,6 +12,7 @@ import org.example.eiscuno.model.machine.ThreadPlayMachine;
 import org.example.eiscuno.model.machine.ThreadSingUNOMachine;
 import org.example.eiscuno.model.player.Player;
 import org.example.eiscuno.model.table.Table;
+import org.example.eiscuno.model.unoenum.EISCUnoEnum;
 
 /**
  * Controller class for the Uno game.
@@ -45,6 +46,7 @@ public class GameUnoController {
         initVariables();
         this.gameUno.startGame();
         printCardsHumanPlayer();
+        printCardsMachinePlayer();
 
         threadSingUNOMachine = new ThreadSingUNOMachine(this.humanPlayer.getCardsPlayer());
         Thread t = new Thread(threadSingUNOMachine, "ThreadSingUNO");
@@ -67,6 +69,19 @@ public class GameUnoController {
         this.table = new Table();
         this.gameUno = new GameUno(this.humanPlayer, this.machinePlayer, this.deck, this.table);
         this.posInitCardToShow = 0;
+    }
+
+    private void printCardsMachinePlayer(){
+        this.gridPaneCardsMachine.getChildren().clear();
+        Card[] currentVisibleCardsMachinePlayer = this.gameUno.getCurrentVisibleCardsMachinePlayer(this.posInitCardToShow);
+        for (int i = 0; i < currentVisibleCardsMachinePlayer.length; i++) {
+            Card card = currentVisibleCardsMachinePlayer[i];
+            ImageView cardImageView = new ImageView(EISCUnoEnum.CARD_UNO.getFilePath());
+            cardImageView.setY(16);
+            cardImageView.setFitHeight(90);
+            cardImageView.setFitWidth(70);
+            this.gridPaneCardsMachine.add(cardImageView, i, 0);
+        }
     }
 
     /**
