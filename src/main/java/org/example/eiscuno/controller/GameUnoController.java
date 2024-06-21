@@ -52,6 +52,9 @@ public class GameUnoController {
 
         threadPlayMachine = new ThreadPlayMachine(this.table, this.deck, this.machinePlayer, this.tableImageView);
         threadPlayMachine.start();
+        Card firstCard = deck.takeCard();
+        table.addCardOnTheTable(firstCard);
+        tableImageView.setImage(firstCard.getImage());
     }
 
     /**
@@ -143,6 +146,7 @@ public class GameUnoController {
     void onHandleTakeCard(ActionEvent event) {
         Card card = this.deck.takeCard();
         this.humanPlayer.addCard(card);
+        printCardsHumanPlayer();
         threadPlayMachine.setHasPlayerPlayed(true);
     }
 
