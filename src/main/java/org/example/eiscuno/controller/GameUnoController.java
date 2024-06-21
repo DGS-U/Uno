@@ -50,7 +50,7 @@ public class GameUnoController {
         Thread t = new Thread(threadSingUNOMachine, "ThreadSingUNO");
         t.start();
 
-        threadPlayMachine = new ThreadPlayMachine(this.table, this.machinePlayer, this.tableImageView);
+        threadPlayMachine = new ThreadPlayMachine(this.table, this.deck, this.machinePlayer, this.tableImageView);
         threadPlayMachine.start();
     }
 
@@ -78,7 +78,10 @@ public class GameUnoController {
             ImageView cardImageView = card.getCard();
 
             cardImageView.setOnMouseClicked((MouseEvent event) -> {
-                // Aqui deberian verificar si pueden en la tabla jugar esa carta
+                if (!gameUno.canPlayCard(card)) {
+                    return;
+                }
+
                 gameUno.playCard(card);
                 tableImageView.setImage(card.getImage());
                 humanPlayer.removeCard(findPosCardsHumanPlayer(card));
@@ -138,7 +141,9 @@ public class GameUnoController {
      */
     @FXML
     void onHandleTakeCard(ActionEvent event) {
-        // Implement logic to take a card here
+        Card card = this.deck.takeCard();
+        this.humanPlayer.addCard(card);
+        threadPlayMachine.setHasPlayerPlayed(true);
     }
 
     /**

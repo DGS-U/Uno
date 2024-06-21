@@ -69,6 +69,18 @@ public class GameUno implements IGameUno {
         this.table.addCardOnTheTable(card);
     }
 
+    public boolean canPlayCard(Card card) {
+        Card currentCard;
+        try {
+            currentCard = table.getCurrentCardOnTheTable();
+        } catch (IndexOutOfBoundsException e) {
+            return true;
+        }
+
+        return currentCard.getValue().equals(card.getValue()) ||
+                currentCard.getColor().equals(card.getColor());
+    }
+
     /**
      * Handles the scenario when a player shouts "Uno", forcing the other player to draw a card.
      *
