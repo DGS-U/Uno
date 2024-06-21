@@ -15,7 +15,9 @@ import org.example.eiscuno.model.player.Player;
 import org.example.eiscuno.model.table.Table;
 import org.example.eiscuno.model.unoenum.EISCUnoEnum;
 import org.example.eiscuno.observer.EventListener;
-import org.example.eiscuno.observer.TurnEventManager;
+import org.example.eiscuno.observer.EventManager;
+
+import java.util.Objects;
 
 /**
  * Controller class for the Uno game.
@@ -41,7 +43,9 @@ public class GameUnoController implements EventListener {
     private ThreadSingUNOMachine threadSingUNOMachine;
     private ThreadPlayMachine threadPlayMachine;
     private boolean isPlayerTurn;
-    private TurnEventManager turnEventManager;
+    private boolean sangUnoToPlayer;
+    private boolean sangUnoToMachine;
+    private EventManager eventManager;
 
     /**
      * Initializes the controller.
@@ -52,16 +56,24 @@ public class GameUnoController implements EventListener {
         this.gameUno.startGame();
         printCardsHumanPlayer();
         printCardsMachinePlayer();
+        eventManager = new EventManager();
 
-        threadSingUNOMachine = new ThreadSingUNOMachine(this.humanPlayer.getCardsPlayer());
+        threadSingUNOMachine =
+                new ThreadSingUNOMachine(this.humanPlayer.getCardsPlayer(),
+                        this.machinePlayer.getCardsPlayer(),
+                        this.eventManager);
         Thread t = new Thread(threadSingUNOMachine, "ThreadSingUNO");
         t.start();
 
         isPlayerTurn = true;
-        turnEventManager = new TurnEventManager();
-        threadPlayMachine = new ThreadPlayMachine(this.table, this.deck, this.machinePlayer, this.tableImageView, turnEventManager);
+        sangUnoToPlayer = false;
+        sangUnoToMachine = false;
+        threadPlayMachine = new ThreadPlayMachine(this.table, this.deck,
+                this.machinePlayer, this.tableImageView, this.eventManager,
+                this.threadSingUNOMachine);
         threadPlayMachine.start();
-        turnEventManager.subscribe(this);
+        eventManager.subscribe("isPlayerTurn", this);
+        eventManager.subscribe("wasUnoSang", this);
         Card firstCard = deck.takeCard();
         table.addCardOnTheTable(firstCard);
         tableImageView.setImage(firstCard.getImage());
@@ -175,6 +187,9 @@ public class GameUnoController implements EventListener {
         printCardsHumanPlayer();
         threadPlayMachine.setIsPlayerTurn(false);
         isPlayerTurn = false;
+        if (sangUnoToPlayer) {
+            sangUnoToPlayer = false;
+        }
     }
 
     /**
@@ -185,13 +200,37 @@ public class GameUnoController implements EventListener {
     @FXML
     void onHandleUno(ActionEvent event) {
         // Implement logic to handle Uno event here
+        if (humanPlayer.getCardsPlayer().size() == 1 && !sangUnoToPlayer) {
+            sangUnoToPlayer = true;
+            threadSingUNOMachine.changeSangToPlayer(sangUnoToPlayer);
+            return;
+        }
+        if (machinePlayer.getCardsPlayer().size() == 1 && !sangUnoToMachine) {
+            threadSingUNOMachine.changeSangToMachine(true);
+            gameUno.eatCard(machinePlayer, 2);
+            printCardsMachinePlayer();
+            threadSingUNOMachine.changeSangToMachine(false);
+        }
     }
 
     @Override
-    public void update(boolean message) {
-        isPlayerTurn = message;
-        if (isPlayerTurn) {
-            printCardsMachinePlayer();
+    public void update(String key, boolean message) {
+        if (Objects.equals(key, "isPlayerTurn")) {
+            isPlayerTurn = message;
+            if (isPlayerTurn) {
+                printCardsMachinePlayer();
+            }
+            return;
+        }
+        if (Objects.equals(key, "sangUnoToPlayer")) {
+            sangUnoToPlayer = message;
+            if (sangUnoToPlayer) {
+                gameUno.eatCard(humanPlayer, 2);
+                printCardsHumanPlayer();
+            }
+        }
+        if (Objects.equals(key, "sangUnoToMachine")) {
+            sangUnoToMachine = message;
         }
     }
 }

@@ -5,7 +5,7 @@ import org.example.eiscuno.model.card.Card;
 import org.example.eiscuno.model.deck.Deck;
 import org.example.eiscuno.model.player.Player;
 import org.example.eiscuno.model.table.Table;
-import org.example.eiscuno.observer.TurnEventManager;
+import org.example.eiscuno.observer.EventManager;
 
 import java.util.Optional;
 
@@ -14,16 +14,21 @@ public class ThreadPlayMachine extends Thread {
     private Deck deck;
     private Player machinePlayer;
     private ImageView tableImageView;
-    private TurnEventManager turnEventManager;
+    private EventManager eventManager;
     private volatile boolean isPlayerTurn;
+    private ThreadSingUNOMachine threadSingUNOMachine;
 
-    public ThreadPlayMachine(Table table, Deck deck, Player machinePlayer, ImageView tableImageView, TurnEventManager turnEventManager) {
+    public ThreadPlayMachine(Table table, Deck deck, Player machinePlayer,
+                             ImageView tableImageView,
+                             EventManager eventManager,
+                             ThreadSingUNOMachine threadSingUNOMachine) {
         this.table = table;
         this.deck = deck;
         this.machinePlayer = machinePlayer;
         this.tableImageView = tableImageView;
         this.isPlayerTurn = true;
-        this.turnEventManager = turnEventManager;
+        this.eventManager = eventManager;
+        this.threadSingUNOMachine = threadSingUNOMachine;
     }
 
     public void run() {
@@ -35,7 +40,7 @@ public class ThreadPlayMachine extends Thread {
                     e.printStackTrace();
                 }
                 putCardOnTheTable();
-                turnEventManager.notify(true);
+                eventManager.notify("isPlayerTurn", true);
                 isPlayerTurn = true;
             }
         }
@@ -49,6 +54,8 @@ public class ThreadPlayMachine extends Thread {
         if (validCard.isEmpty()) {
             System.out.println("Machine player turn - No valid card to play. Taking a card from the deck.");
             machinePlayer.addCard(deck.takeCard());
+            threadSingUNOMachine.changeSangToMachine(false);
+            eventManager.notify("sangUnoToMachine", false);
             return;
         }
 
