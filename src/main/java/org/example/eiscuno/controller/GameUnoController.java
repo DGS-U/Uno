@@ -1,5 +1,6 @@
 package org.example.eiscuno.controller;
 
+import javafx.application.Platform;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.scene.image.ImageView;
@@ -12,11 +13,14 @@ import org.example.eiscuno.model.machine.ThreadPlayMachine;
 import org.example.eiscuno.model.machine.ThreadSingUNOMachine;
 import org.example.eiscuno.model.player.Player;
 import org.example.eiscuno.model.table.Table;
+import org.example.eiscuno.model.unoenum.EISCUnoEnum;
+import org.example.eiscuno.observer.EventListener;
+import org.example.eiscuno.observer.TurnEventManager;
 
 /**
  * Controller class for the Uno game.
  */
-public class GameUnoController {
+public class GameUnoController implements EventListener {
 
     @FXML
     private GridPane gridPaneCardsMachine;
@@ -36,6 +40,8 @@ public class GameUnoController {
 
     private ThreadSingUNOMachine threadSingUNOMachine;
     private ThreadPlayMachine threadPlayMachine;
+    private boolean isPlayerTurn;
+    private TurnEventManager turnEventManager;
 
     /**
      * Initializes the controller.
@@ -45,13 +51,17 @@ public class GameUnoController {
         initVariables();
         this.gameUno.startGame();
         printCardsHumanPlayer();
+        printCardsMachinePlayer();
 
         threadSingUNOMachine = new ThreadSingUNOMachine(this.humanPlayer.getCardsPlayer());
         Thread t = new Thread(threadSingUNOMachine, "ThreadSingUNO");
         t.start();
 
-        threadPlayMachine = new ThreadPlayMachine(this.table, this.deck, this.machinePlayer, this.tableImageView);
+        isPlayerTurn = true;
+        turnEventManager = new TurnEventManager();
+        threadPlayMachine = new ThreadPlayMachine(this.table, this.deck, this.machinePlayer, this.tableImageView, turnEventManager);
         threadPlayMachine.start();
+        turnEventManager.subscribe(this);
         Card firstCard = deck.takeCard();
         table.addCardOnTheTable(firstCard);
         tableImageView.setImage(firstCard.getImage());
@@ -69,6 +79,20 @@ public class GameUnoController {
         this.posInitCardToShow = 0;
     }
 
+    private void printCardsMachinePlayer(){
+        Platform.runLater(() -> {
+            this.gridPaneCardsMachine.getChildren().clear();
+            Card[] currentVisibleCardsMachinePlayer = this.gameUno.getCurrentVisibleCardsMachinePlayer(0);
+            for (int i = 0; i < currentVisibleCardsMachinePlayer.length; i++) {
+                ImageView cardImageView = new ImageView(EISCUnoEnum.CARD_UNO.getFilePath());
+                cardImageView.setY(16);
+                cardImageView.setFitHeight(90);
+                cardImageView.setFitWidth(70);
+                this.gridPaneCardsMachine.add(cardImageView, i, 0);
+            }
+        });
+    }
+
     /**
      * Prints the human player's cards on the grid pane.
      */
@@ -81,14 +105,16 @@ public class GameUnoController {
             ImageView cardImageView = card.getCard();
 
             cardImageView.setOnMouseClicked((MouseEvent event) -> {
-                if (!gameUno.canPlayCard(card)) {
+                System.out.println(isPlayerTurn);
+                if (!isPlayerTurn || !gameUno.canPlayCard(card)) {
                     return;
                 }
 
                 gameUno.playCard(card);
                 tableImageView.setImage(card.getImage());
                 humanPlayer.removeCard(findPosCardsHumanPlayer(card));
-                threadPlayMachine.setHasPlayerPlayed(true);
+                threadPlayMachine.setIsPlayerTurn(false);
+                isPlayerTurn = false;
                 printCardsHumanPlayer();
             });
 
@@ -147,7 +173,8 @@ public class GameUnoController {
         Card card = this.deck.takeCard();
         this.humanPlayer.addCard(card);
         printCardsHumanPlayer();
-        threadPlayMachine.setHasPlayerPlayed(true);
+        threadPlayMachine.setIsPlayerTurn(false);
+        isPlayerTurn = false;
     }
 
     /**
@@ -158,5 +185,13 @@ public class GameUnoController {
     @FXML
     void onHandleUno(ActionEvent event) {
         // Implement logic to handle Uno event here
+    }
+
+    @Override
+    public void update(boolean message) {
+        isPlayerTurn = message;
+        if (isPlayerTurn) {
+            printCardsMachinePlayer();
+        }
     }
 }
