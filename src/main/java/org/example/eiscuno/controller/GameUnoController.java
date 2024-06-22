@@ -3,6 +3,7 @@ package org.example.eiscuno.controller;
 import javafx.application.Platform;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
+import javafx.scene.control.Button;
 import javafx.scene.image.ImageView;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.GridPane;
@@ -73,7 +74,8 @@ public class GameUnoController implements EventListener {
                 this.threadSingUNOMachine);
         threadPlayMachine.start();
         eventManager.subscribe("isPlayerTurn", this);
-        eventManager.subscribe("wasUnoSang", this);
+        eventManager.subscribe("sangUnoToPlayer", this);
+        eventManager.subscribe("sangUnoToMachine", this);
         Card firstCard = deck.takeCard();
         table.addCardOnTheTable(firstCard);
         tableImageView.setImage(firstCard.getImage());
@@ -91,7 +93,7 @@ public class GameUnoController implements EventListener {
         this.posInitCardToShow = 0;
     }
 
-    private void printCardsMachinePlayer(){
+    private void printCardsMachinePlayer() {
         Platform.runLater(() -> {
             this.gridPaneCardsMachine.getChildren().clear();
             Card[] currentVisibleCardsMachinePlayer = this.gameUno.getCurrentVisibleCardsMachinePlayer(0);
@@ -109,29 +111,31 @@ public class GameUnoController implements EventListener {
      * Prints the human player's cards on the grid pane.
      */
     private void printCardsHumanPlayer() {
-        this.gridPaneCardsPlayer.getChildren().clear();
-        Card[] currentVisibleCardsHumanPlayer = this.gameUno.getCurrentVisibleCardsHumanPlayer(this.posInitCardToShow);
+        Platform.runLater(() -> {
+            this.gridPaneCardsPlayer.getChildren().clear();
+            Card[] currentVisibleCardsHumanPlayer = this.gameUno.getCurrentVisibleCardsHumanPlayer(this.posInitCardToShow);
 
-        for (int i = 0; i < currentVisibleCardsHumanPlayer.length; i++) {
-            Card card = currentVisibleCardsHumanPlayer[i];
-            ImageView cardImageView = card.getCard();
+            for (int i = 0; i < currentVisibleCardsHumanPlayer.length; i++) {
+                Card card = currentVisibleCardsHumanPlayer[i];
+                ImageView cardImageView = card.getCard();
 
-            cardImageView.setOnMouseClicked((MouseEvent event) -> {
-                System.out.println(isPlayerTurn);
-                if (!isPlayerTurn || !gameUno.canPlayCard(card)) {
-                    return;
-                }
+                cardImageView.setOnMouseClicked((MouseEvent event) -> {
+                    System.out.println(isPlayerTurn);
+                    if (!isPlayerTurn || !gameUno.canPlayCard(card)) {
+                        return;
+                    }
 
-                gameUno.playCard(card);
-                tableImageView.setImage(card.getImage());
-                humanPlayer.removeCard(findPosCardsHumanPlayer(card));
-                threadPlayMachine.setIsPlayerTurn(false);
-                isPlayerTurn = false;
-                printCardsHumanPlayer();
-            });
+                    gameUno.playCard(card);
+                    tableImageView.setImage(card.getImage());
+                    humanPlayer.removeCard(findPosCardsHumanPlayer(card));
+                    threadPlayMachine.setIsPlayerTurn(false);
+                    isPlayerTurn = false;
+                    printCardsHumanPlayer();
+                });
 
-            this.gridPaneCardsPlayer.add(cardImageView, i, 0);
-        }
+                this.gridPaneCardsPlayer.add(cardImageView, i, 0);
+            }
+        });
     }
 
     /**
@@ -221,6 +225,7 @@ public class GameUnoController implements EventListener {
                 printCardsMachinePlayer();
             }
             return;
+
         }
         if (Objects.equals(key, "sangUnoToPlayer")) {
             sangUnoToPlayer = message;
@@ -228,6 +233,7 @@ public class GameUnoController implements EventListener {
                 gameUno.eatCard(humanPlayer, 2);
                 printCardsHumanPlayer();
             }
+            return;
         }
         if (Objects.equals(key, "sangUnoToMachine")) {
             sangUnoToMachine = message;

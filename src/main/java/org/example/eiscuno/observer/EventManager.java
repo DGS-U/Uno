@@ -11,6 +11,7 @@ public class EventManager {
     public void subscribe(String key, EventListener eventListener) {
         if (!eventListeners.containsKey(key)) {
             eventListeners.put(key, new ArrayList<>(){{add(eventListener);}});
+            return;
         }
         eventListeners.get(key).add(eventListener);
     }
