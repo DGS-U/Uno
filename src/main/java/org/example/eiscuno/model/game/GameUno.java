@@ -132,7 +132,7 @@ public class GameUno implements IGameUno {
      * @return True if the deck is empty, indicating the game is over; otherwise, false.
      */
     @Override
-    public Boolean isGameOver() {
-        return null;
+    public Boolean isGameOver(Player player) {
+        return player.getCardsPlayer().isEmpty();
     }
 }

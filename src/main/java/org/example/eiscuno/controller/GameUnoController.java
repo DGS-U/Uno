@@ -17,6 +17,8 @@ import org.example.eiscuno.model.table.Table;
 import org.example.eiscuno.model.unoenum.EISCUnoEnum;
 import org.example.eiscuno.observer.EventListener;
 import org.example.eiscuno.observer.EventManager;
+import org.example.eiscuno.view.GameUnoStage;
+import org.example.eiscuno.view.alert.CustomAlert;
 
 import java.util.Objects;
 
@@ -217,26 +219,50 @@ public class GameUnoController implements EventListener {
         }
     }
 
+    @FXML
+    private void onHandleExit(ActionEvent event) {
+        Platform.runLater(() -> {
+            GameUnoStage.deleteInstance();
+        });
+    }
+
     @Override
     public void update(String key, boolean message) {
-        if (Objects.equals(key, "isPlayerTurn")) {
-            isPlayerTurn = message;
-            if (isPlayerTurn) {
-                printCardsMachinePlayer();
+        Platform.runLater(() -> {
+            if (gameUno.isGameOver(humanPlayer)) {
+                new CustomAlert().showInfo(
+                        "¡Ganaste!",
+                        "¡Ganaste!",
+                        "Ha ganado la partida"
+                );
+                GameUnoStage.deleteInstance();
+            } else if (gameUno.isGameOver(machinePlayer)) {
+                new CustomAlert().showInfo(
+                        "Perdiste",
+                        "Has perdido :(",
+                        "La maquina ha ganado la partida"
+                );
+                GameUnoStage.deleteInstance();
             }
-            return;
+            if (Objects.equals(key, "isPlayerTurn")) {
+                isPlayerTurn = message;
+                if (isPlayerTurn) {
+                    printCardsMachinePlayer();
+                }
+                return;
 
-        }
-        if (Objects.equals(key, "sangUnoToPlayer")) {
-            sangUnoToPlayer = message;
-            if (sangUnoToPlayer) {
-                gameUno.eatCard(humanPlayer, 2);
-                printCardsHumanPlayer();
             }
-            return;
-        }
-        if (Objects.equals(key, "sangUnoToMachine")) {
-            sangUnoToMachine = message;
-        }
+            if (Objects.equals(key, "sangUnoToPlayer")) {
+                sangUnoToPlayer = message;
+                if (sangUnoToPlayer) {
+                    gameUno.eatCard(humanPlayer, 2);
+                    printCardsHumanPlayer();
+                }
+                return;
+            }
+            if (Objects.equals(key, "sangUnoToMachine")) {
+                sangUnoToMachine = message;
+            }
+        });
     }
 }
