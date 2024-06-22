@@ -1,5 +1,6 @@
 package org.example.eiscuno.model.machine;
 
+import javafx.fxml.FXML;
 import org.example.eiscuno.model.card.Card;
 import org.example.eiscuno.observer.EventManager;
 

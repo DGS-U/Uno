@@ -44,25 +44,25 @@ public class Deck {
     }
 
     private String getCardValue(String name) {
-        if (name.endsWith("0")){
+        if (name.endsWith("0")) {
             return "0";
-        } else if (name.endsWith("1")){
+        } else if (name.endsWith("1")) {
             return "1";
-        } else if (name.endsWith("2")){
+        } else if (name.endsWith("2")) {
             return "2";
-        } else if (name.endsWith("3")){
+        } else if (name.endsWith("3")) {
             return "3";
-        } else if (name.endsWith("4")){
+        } else if (name.endsWith("4")) {
             return "4";
-        } else if (name.endsWith("5")){
+        } else if (name.endsWith("5")) {
             return "5";
-        } else if (name.endsWith("6")){
+        } else if (name.endsWith("6")) {
             return "6";
-        } else if (name.endsWith("7")){
+        } else if (name.endsWith("7")) {
             return "7";
-        } else if (name.endsWith("8")){
+        } else if (name.endsWith("8")) {
             return "8";
-        } else if (name.endsWith("9")){
+        } else if (name.endsWith("9")) {
             return "9";
         } else if (name.contains("RESERVE")) {
             return "RESERVE";
@@ -80,14 +80,14 @@ public class Deck {
 
     }
 
-    private String getCardColor(String name){
-        if(name.contains("GREEN")){
+    private String getCardColor(String name) {
+        if (name.contains("GREEN")) {
             return "GREEN";
-        } else if(name.contains("YELLOW")){
+        } else if (name.contains("YELLOW")) {
             return "YELLOW";
-        } else if(name.contains("BLUE")){
+        } else if (name.contains("BLUE")) {
             return "BLUE";
-        } else if(name.contains("RED")){
+        } else if (name.contains("RED")) {
             return "RED";
         } else {
             return "NON_COLOR";
