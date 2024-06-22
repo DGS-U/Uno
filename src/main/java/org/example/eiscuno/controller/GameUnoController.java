@@ -3,6 +3,7 @@ package org.example.eiscuno.controller;
 import javafx.application.Platform;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
+import javafx.scene.control.Button;
 import javafx.scene.image.ImageView;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.GridPane;
@@ -15,7 +16,9 @@ import org.example.eiscuno.model.player.Player;
 import org.example.eiscuno.model.table.Table;
 import org.example.eiscuno.model.unoenum.EISCUnoEnum;
 import org.example.eiscuno.observer.EventListener;
-import org.example.eiscuno.observer.TurnEventManager;
+import org.example.eiscuno.observer.EventManager;
+
+import java.util.Objects;
 
 /**
  * Controller class for the Uno game.
@@ -41,7 +44,9 @@ public class GameUnoController implements EventListener {
     private ThreadSingUNOMachine threadSingUNOMachine;
     private ThreadPlayMachine threadPlayMachine;
     private boolean isPlayerTurn;
-    private TurnEventManager turnEventManager;
+    private boolean sangUnoToPlayer;
+    private boolean sangUnoToMachine;
+    private EventManager eventManager;
 
     /**
      * Initializes the controller.
@@ -52,16 +57,25 @@ public class GameUnoController implements EventListener {
         this.gameUno.startGame();
         printCardsHumanPlayer();
         printCardsMachinePlayer();
+        eventManager = new EventManager();
 
-        threadSingUNOMachine = new ThreadSingUNOMachine(this.humanPlayer.getCardsPlayer());
+        threadSingUNOMachine =
+                new ThreadSingUNOMachine(this.humanPlayer.getCardsPlayer(),
+                        this.machinePlayer.getCardsPlayer(),
+                        this.eventManager);
         Thread t = new Thread(threadSingUNOMachine, "ThreadSingUNO");
         t.start();
 
         isPlayerTurn = true;
-        turnEventManager = new TurnEventManager();
-        threadPlayMachine = new ThreadPlayMachine(this.table, this.deck, this.machinePlayer, this.tableImageView, turnEventManager);
+        sangUnoToPlayer = false;
+        sangUnoToMachine = false;
+        threadPlayMachine = new ThreadPlayMachine(this.table, this.deck,
+                this.machinePlayer, this.tableImageView, this.eventManager,
+                this.threadSingUNOMachine);
         threadPlayMachine.start();
-        turnEventManager.subscribe(this);
+        eventManager.subscribe("isPlayerTurn", this);
+        eventManager.subscribe("sangUnoToPlayer", this);
+        eventManager.subscribe("sangUnoToMachine", this);
         Card firstCard = deck.takeCard();
         table.addCardOnTheTable(firstCard);
         tableImageView.setImage(firstCard.getImage());
@@ -79,7 +93,7 @@ public class GameUnoController implements EventListener {
         this.posInitCardToShow = 0;
     }
 
-    private void printCardsMachinePlayer(){
+    private void printCardsMachinePlayer() {
         Platform.runLater(() -> {
             this.gridPaneCardsMachine.getChildren().clear();
             Card[] currentVisibleCardsMachinePlayer = this.gameUno.getCurrentVisibleCardsMachinePlayer(0);
@@ -97,29 +111,31 @@ public class GameUnoController implements EventListener {
      * Prints the human player's cards on the grid pane.
      */
     private void printCardsHumanPlayer() {
-        this.gridPaneCardsPlayer.getChildren().clear();
-        Card[] currentVisibleCardsHumanPlayer = this.gameUno.getCurrentVisibleCardsHumanPlayer(this.posInitCardToShow);
+        Platform.runLater(() -> {
+            this.gridPaneCardsPlayer.getChildren().clear();
+            Card[] currentVisibleCardsHumanPlayer = this.gameUno.getCurrentVisibleCardsHumanPlayer(this.posInitCardToShow);
 
-        for (int i = 0; i < currentVisibleCardsHumanPlayer.length; i++) {
-            Card card = currentVisibleCardsHumanPlayer[i];
-            ImageView cardImageView = card.getCard();
+            for (int i = 0; i < currentVisibleCardsHumanPlayer.length; i++) {
+                Card card = currentVisibleCardsHumanPlayer[i];
+                ImageView cardImageView = card.getCard();
 
-            cardImageView.setOnMouseClicked((MouseEvent event) -> {
-                System.out.println(isPlayerTurn);
-                if (!isPlayerTurn || !gameUno.canPlayCard(card)) {
-                    return;
-                }
+                cardImageView.setOnMouseClicked((MouseEvent event) -> {
+                    System.out.println(isPlayerTurn);
+                    if (!isPlayerTurn || !gameUno.canPlayCard(card)) {
+                        return;
+                    }
 
-                gameUno.playCard(card);
-                tableImageView.setImage(card.getImage());
-                humanPlayer.removeCard(findPosCardsHumanPlayer(card));
-                threadPlayMachine.setIsPlayerTurn(false);
-                isPlayerTurn = false;
-                printCardsHumanPlayer();
-            });
+                    gameUno.playCard(card);
+                    tableImageView.setImage(card.getImage());
+                    humanPlayer.removeCard(findPosCardsHumanPlayer(card));
+                    threadPlayMachine.setIsPlayerTurn(false);
+                    isPlayerTurn = false;
+                    printCardsHumanPlayer();
+                });
 
-            this.gridPaneCardsPlayer.add(cardImageView, i, 0);
-        }
+                this.gridPaneCardsPlayer.add(cardImageView, i, 0);
+            }
+        });
     }
 
     /**
@@ -175,6 +191,9 @@ public class GameUnoController implements EventListener {
         printCardsHumanPlayer();
         threadPlayMachine.setIsPlayerTurn(false);
         isPlayerTurn = false;
+        if (sangUnoToPlayer) {
+            sangUnoToPlayer = false;
+        }
     }
 
     /**
@@ -185,13 +204,39 @@ public class GameUnoController implements EventListener {
     @FXML
     void onHandleUno(ActionEvent event) {
         // Implement logic to handle Uno event here
+        if (humanPlayer.getCardsPlayer().size() == 1 && !sangUnoToPlayer) {
+            sangUnoToPlayer = true;
+            threadSingUNOMachine.changeSangToPlayer(sangUnoToPlayer);
+            return;
+        }
+        if (machinePlayer.getCardsPlayer().size() == 1 && !sangUnoToMachine) {
+            threadSingUNOMachine.changeSangToMachine(true);
+            gameUno.eatCard(machinePlayer, 2);
+            printCardsMachinePlayer();
+            threadSingUNOMachine.changeSangToMachine(false);
+        }
     }
 
     @Override
-    public void update(boolean message) {
-        isPlayerTurn = message;
-        if (isPlayerTurn) {
-            printCardsMachinePlayer();
+    public void update(String key, boolean message) {
+        if (Objects.equals(key, "isPlayerTurn")) {
+            isPlayerTurn = message;
+            if (isPlayerTurn) {
+                printCardsMachinePlayer();
+            }
+            return;
+
+        }
+        if (Objects.equals(key, "sangUnoToPlayer")) {
+            sangUnoToPlayer = message;
+            if (sangUnoToPlayer) {
+                gameUno.eatCard(humanPlayer, 2);
+                printCardsHumanPlayer();
+            }
+            return;
+        }
+        if (Objects.equals(key, "sangUnoToMachine")) {
+            sangUnoToMachine = message;
         }
     }
 }
